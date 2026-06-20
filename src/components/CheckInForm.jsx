@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Activity, Moon, BookOpen, Brain } from 'lucide-react';
+import { validateCheckInData } from '../utils/engine';
 
 // Clamp a numeric value to [min, max], or return empty string while typing
 function clampHours(raw) {
@@ -30,50 +31,25 @@ export default function CheckInForm({ onSubmit }) {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-  // ---------- submit-time validation ----------
   const validate = () => {
-    const errs = {};
+    const result = validateCheckInData(data);
+    const errs = { ...result.errors };
 
-    const sleepNum = parseFloat(data.sleep);
-    if (data.sleep === '' || isNaN(sleepNum)) {
-      errs.sleep = 'Sleep hours is required.';
-    } else if (sleepNum < 0 || sleepNum > 24) {
-      errs.sleep = 'Sleep hours must be between 0 and 24.';
-    }
+    if (data.sleep === '') errs.sleep = 'Sleep hours is required.';
+    if (data.studyHours === '') errs.studyHours = 'Study hours is required.';
 
-    const studyNum = parseFloat(data.studyHours);
-    if (data.studyHours === '' || isNaN(studyNum)) {
-      errs.studyHours = 'Study hours is required.';
-    } else if (studyNum < 0 || studyNum > 24) {
-      errs.studyHours = 'Study hours must be between 0 and 24.';
-    }
-
-    const stressNum = parseInt(data.stressLevel, 10);
-    if (isNaN(stressNum) || stressNum < 1 || stressNum > 10) {
-      errs.stressLevel = 'Please select a stress level between 1 and 10.';
-    }
-
-    if (!data.mood) {
-      errs.mood = 'Please select your current mood.';
-    }
-
-    return errs;
+    return { errs, checkIn: result.checkIn };
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const errs = validate();
+    const { errs, checkIn } = validate();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
     }
     setErrors({});
-    onSubmit({
-      ...data,
-      sleep: parseFloat(data.sleep),
-      studyHours: parseFloat(data.studyHours),
-      stressLevel: parseInt(data.stressLevel, 10),
-    });
+    onSubmit(checkIn);
   };
 
   return (

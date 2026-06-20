@@ -1,30 +1,46 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { MessageCircle, Send } from 'lucide-react';
-import { generateChatResponse } from '../utils/engine';
+import { generateChatResponse, StorageHelper } from '../utils/engine';
+
+const quickPrompts = [
+  "I'm overwhelmed with syllabus",
+  'I studied too long today',
+  "I can't sleep before exams"
+];
+
+const getInitialGreeting = () => {
+  const profile = StorageHelper.getProfile() || StorageHelper.getSavedProfile();
+  const name = profile?.name ? `, ${profile.name.split(' ')[0]}` : '';
+
+  return { role: 'ai', text: `Hi${name}! I'm your Aura companion. How is your studying going today?` };
+};
 
 export default function SupportiveChat() {
-  const [messages, setMessages] = useState([
-    { role: 'ai', text: "Hi there! I'm your Aura companion. How is your studying going today?" }
-  ]);
+  const [messages, setMessages] = useState(() => {
+    const savedMessages = StorageHelper.getChatMessages();
+    return savedMessages.length > 0 ? savedMessages : [getInitialGreeting()];
+  });
   const [input, setInput] = useState('');
+
+  const sendMessage = useCallback((text) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    const newMsgs = [...messages, { role: 'user', text: trimmed }];
+    const aiResponse = generateChatResponse(trimmed, newMsgs);
+    const nextMessages = [...newMsgs, { role: 'ai', text: aiResponse }];
+    setMessages(nextMessages);
+    StorageHelper.saveChatMessages(nextMessages);
+    setInput('');
+  }, [messages]);
 
   const handleSend = (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
-
-    const newMsgs = [...messages, { role: 'user', text: input }];
-    setMessages(newMsgs);
-    setInput('');
-
-    // Simulate AI thinking
-    setTimeout(() => {
-      const aiResponse = generateChatResponse(input, newMsgs);
-      setMessages([...newMsgs, { role: 'ai', text: aiResponse }]);
-    }, 600);
+    sendMessage(input);
   };
 
   return (
-    <div className="glass-panel flex-column" style={{ height: '400px' }}>
+    <div className="glass-panel flex-column" style={{ height: '480px' }}>
       <h3 className="flex-center gap-2" style={{ justifyContent: 'flex-start', color: '#93c5fd', marginBottom: '1rem' }}>
         <MessageCircle size={20} /> Supportive Chat
       </h3>
@@ -42,6 +58,20 @@ export default function SupportiveChat() {
           }}>
             <p style={{ margin: 0, color: 'white', fontSize: '0.95rem' }}>{msg.text}</p>
           </div>
+        ))}
+      </div>
+
+      <div className="flex-center gap-2 mt-4" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
+        {quickPrompts.map((prompt) => (
+          <button
+            key={prompt}
+            type="button"
+            className="btn btn-secondary"
+            style={{ padding: '0.45rem 0.7rem', fontSize: '0.78rem' }}
+            onClick={() => sendMessage(prompt)}
+          >
+            {prompt}
+          </button>
         ))}
       </div>
 

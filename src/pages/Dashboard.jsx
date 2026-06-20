@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { StorageHelper, getLatestWellnessState, getRiskLabel } from '../utils/engine';
+import { getDashboardSnapshot, getRiskLabel } from '../utils/engine';
 import {
   ClipboardCheck, BrainCircuit, Dumbbell, MessageCircle,
   LifeBuoy, History, AlertTriangle, ChevronRight
@@ -66,10 +66,8 @@ const RISK_BADGE_STYLES = {
 };
 
 export default function Dashboard() {
-  const profile = StorageHelper.getProfile();
-  const { latestCheckIn, latestAnalysis, riskLevel } = getLatestWellnessState();
-
-  const [today] = useState(() => new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' }));
+  const { profile, latestCheckIn, latestAnalysis, riskLevel } = useMemo(() => getDashboardSnapshot(), []);
+  const today = useMemo(() => new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' }), []);
 
   return (
     <div>

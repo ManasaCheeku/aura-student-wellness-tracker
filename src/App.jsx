@@ -18,13 +18,11 @@ function RequireProfile({ children }) {
 }
 
 function App() {
-  const profile = StorageHelper.getProfile();
-
   return (
     <BrowserRouter>
       <Routes>
         {/* Portal: always accessible */}
-        <Route path="/" element={profile ? <Navigate to="/dashboard" replace /> : <PortalPage />} />
+        <Route path="/" element={<PortalPage />} />
 
         {/* All app routes share the Layout shell */}
         <Route element={<Layout />}>

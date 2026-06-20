@@ -1,8 +1,16 @@
 import { History } from 'lucide-react';
-import { StorageHelper } from '../utils/engine';
+import { formatDateTime, getRiskLabel, getRiskLevel, StorageHelper } from '../utils/engine';
 
-export default function HistorySummary({ limit = 5 }) {
-  const allHistory = StorageHelper.getCheckIns().slice().reverse();
+const RISK_STYLES = {
+  low: { color: '#6ee7b7', border: 'var(--status-success)', background: 'rgba(16,185,129,0.12)' },
+  moderate: { color: '#fcd34d', border: 'var(--status-warning)', background: 'rgba(245,158,11,0.12)' },
+  high: { color: '#fdba74', border: '#f97316', background: 'rgba(249,115,22,0.12)' },
+  severe: { color: '#fca5a5', border: 'var(--status-danger)', background: 'rgba(239,68,68,0.12)' }
+};
+
+export default function HistorySummary({ limit = 5, entries = null }) {
+  const sourceHistory = Array.isArray(entries) ? entries : StorageHelper.getCheckIns();
+  const allHistory = sourceHistory.slice().reverse();
   const history = limit ? allHistory.slice(0, limit) : allHistory;
 
   if (history.length === 0) {
@@ -14,42 +22,47 @@ export default function HistorySummary({ limit = 5 }) {
   }
 
   return (
-    <div className="glass-panel">
-      <h3 className="flex-center gap-2" style={{ justifyContent: 'flex-start', color: '#cbd5e1' }}>
+    <div className="glass-panel history-list-panel">
+      <h3 className="flex-center gap-2 history-list-header">
         <History size={20} /> {limit ? 'Recent History' : 'Full Check-in History'}
       </h3>
-      <div className="flex-column gap-2 mt-4">
-        {history.map((entry, idx) => (
-          <div key={idx} style={{ 
-            padding: '0.75rem', 
-            background: 'rgba(0,0,0,0.2)', 
-            borderRadius: 'var(--border-radius-sm)',
-            borderLeft: `4px solid ${parseInt(entry.stressLevel) >= 8 ? 'var(--status-danger)' : parseInt(entry.stressLevel) >= 5 ? 'var(--status-warning)' : 'var(--status-success)'}`
-          }}>
-            <div className="flex-between">
-              <span style={{ fontSize: '0.9rem', color: '#e2e8f0' }}>
-                {new Date(entry.timestamp).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}{' '}
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                  {new Date(entry.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+      <div className="history-list">
+        {history.map((entry, idx) => {
+          const riskLevel = getRiskLevel(entry);
+          const style = RISK_STYLES[riskLevel] || RISK_STYLES.low;
+
+          return (
+            <div key={`${entry.timestamp || 'entry'}-${idx}`} className="history-entry" style={{
+              borderLeft: `4px solid ${style.border}`
+            }}>
+              <div className="history-entry-top">
+                <span className="history-entry-date">
+                  {formatDateTime(entry.timestamp)}
                 </span>
-              </span>
-              <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                Stress: {entry.stressLevel}/10
-                <span style={{ marginLeft: '8px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)' }}>
-                  {parseInt(entry.stressLevel) >= 8 ? '[High Risk]' : parseInt(entry.stressLevel) >= 5 ? '[Moderate Risk]' : '[Low Risk]'}
+                <span className="history-entry-badge" style={{
+                  color: style.color,
+                  background: style.background,
+                  border: `1px solid ${style.border}`
+                }}>
+                  {getRiskLabel(riskLevel)}
                 </span>
-              </span>
-            </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              Mood: {entry.mood} &nbsp;|&nbsp; Sleep: {entry.sleep}h &nbsp;|&nbsp; Study: {entry.studyHours}h
-            </div>
-            {entry.journal && (
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontStyle: 'italic' }}>
-                "{entry.journal.slice(0, 80)}{entry.journal.length > 80 ? '…' : ''}"
               </div>
-            )}
-          </div>
-        ))}
+
+              <div className="history-entry-metrics">
+                <span>Stress: <strong style={{ color: '#e2e8f0' }}>{entry.stressLevel}/10</strong></span>
+                <span>Sleep: <strong style={{ color: '#e2e8f0' }}>{entry.sleep}h</strong></span>
+                <span>Study: <strong style={{ color: '#e2e8f0' }}>{entry.studyHours}h</strong></span>
+                <span>Mood: <strong style={{ color: '#e2e8f0' }}>{entry.mood}</strong></span>
+              </div>
+
+              {entry.journal && (
+                <div className="history-entry-note">
+                  "{entry.journal.slice(0, 110)}{entry.journal.length > 110 ? '...' : ''}"
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

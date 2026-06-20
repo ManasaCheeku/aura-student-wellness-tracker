@@ -1,4 +1,5 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { useCallback } from 'react';
 import { StorageHelper } from '../utils/engine';
 import { Home, LogOut } from 'lucide-react';
 
@@ -6,10 +7,10 @@ export default function Layout() {
   const profile = StorageHelper.getProfile();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    // Optionally clear or just return to portal
-    navigate('/');
-  };
+  const handleLogout = useCallback(() => {
+    StorageHelper.clearActiveProfile();
+    navigate('/', { replace: true });
+  }, [navigate]);
 
   if (!profile) return <Outlet />;
 
